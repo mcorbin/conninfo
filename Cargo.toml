@@ -1,0 +1,6 @@
+[package]
+name = "rsnetstat"
+version = "0.1.0"
+authors = ["mcorbin <corbin.math@gmail.com>"]
+
+[dependencies]
