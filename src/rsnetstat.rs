@@ -30,6 +30,11 @@ impl From<io::Error> for NetstatError {
     }
 }
 
+fn shift_ipv4(ip: u64) -> u64 {
+    let fmt_ui = (ip << 24 & 0xFF000000) + (ip << 8 & 0x00FF0000) + (ip >> 8 & 0x0000FF00) + (ip >> 24 & 0x000000FF);
+    fmt_ui
+}
+
 /// Parse the /proc/net/tcp file. Returns a Vec of Entry
 ///
 /// # Example
@@ -50,13 +55,13 @@ fn parse_linux_file(path: &str) -> Result<Vec<Entry>, NetstatError> {
             filter(|&v| v != "").
             collect();
         let local: Vec<&str> = line_vec[1].split(':').collect();
-        let local_addr = try!(u64::from_str_radix(local[0], 16));
-        let local_port = try!(u64::from_str_radix(local[1], 16));
+        let local_addr = shift_ipv4(u64::from_str_radix(local[0], 16)?);
+        let local_port = u64::from_str_radix(local[1], 16)?;
         let remote: Vec<&str> = line_vec[2].split(':').collect();
-        let remote_addr = try!(u64::from_str_radix(remote[0], 16));
-        let remote_port = try!(u64::from_str_radix(remote[1], 16));
-        let uid = try!(line_vec[8].parse::<i32>());
-        let conn_state = try!(i32::from_str_radix(line_vec[3], 16));
+        let remote_addr = shift_ipv4(u64::from_str_radix(remote[0], 16)?);
+        let remote_port = u64::from_str_radix(remote[1], 16)?;
+        let uid = line_vec[7].parse::<i32>()?;
+        let conn_state = i32::from_str_radix(line_vec[3], 16)?;
         result.push(Entry {
             local_address: local_addr,
             local_port: local_port,
@@ -72,12 +77,44 @@ fn parse_linux_file(path: &str) -> Result<Vec<Entry>, NetstatError> {
 #[cfg(test)]
 mod tests {
     use std::env;
+
     #[test]
-    fn parse_linux_file_test_success() {
+    fn parse_linux_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_tcp");
         let result = super::parse_linux_file(&path).unwrap();
-        assert_eq!(result.len(), 8);
+        assert_eq!(result.len(), 3);
+        let e0 = &result[0];
+        assert_eq!(e0.local_address, 0x7F000001);
+        assert_eq!(e0.local_port, 0x19);
+        assert_eq!(e0.remote_address, 0);
+        assert_eq!(e0.remote_port, 0);
+        assert_eq!(e0.uid, 0);
+        assert_eq!(e0.connection_state, 0xA);
+
+        let e1 = &result[1];
+        assert_eq!(e1.local_address, 0x7F000001);
+        assert_eq!(e1.local_port, 0x8AE);
+        assert_eq!(e1.remote_address, 0);
+        assert_eq!(e1.remote_port, 0);
+        assert_eq!(e1.uid, 1000);
+        assert_eq!(e1.connection_state, 0xA);
+
+        let e2 = &result[2];
+        assert_eq!(e2.local_address, 0);
+        assert_eq!(e2.local_port, 0x006F);
+        assert_eq!(e2.remote_address, 0x7F000203);
+        assert_eq!(e2.remote_port, 0);
+        assert_eq!(e2.uid, 0);
+        assert_eq!(e2.connection_state, 0xA);
+    }
+
+    #[test]
+    fn shift_ipv4_test() {
+        assert_eq!(0xFF000001, super::shift_ipv4(0x010000FF));
+        assert_eq!(0x12345678, super::shift_ipv4(0x78563412));
+        assert_eq!(0xFA000000, super::shift_ipv4(0x000000FA));
+        assert_eq!(0x000000FA, super::shift_ipv4(0xFA000000));
     }
 }
 
