@@ -1,6 +1,6 @@
 
-type Ip6 = [u32; 4];
-type Ip4 = u32;
+pub type Ip6 = [u32; 4];
+pub type Ip4 = u32;
 
 #[derive(Clone, Debug)]
 pub enum Ip {
@@ -35,7 +35,6 @@ pub fn shift_ipv6(ip: Ip6) -> Ip6 {
     }
     result
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -71,12 +71,16 @@ fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, NetstatError> {
         let remote: Vec<&str> = line_vec[2].split(':').collect();
         let (local_addr, remote_addr) = match mode {
             Mode::Tcp|Mode::Udp => {
-                (ip::shift_ipv4(u32::from_str_radix(local[0], 16)?),
-                 ip::shift_ipv4(u32::from_str_radix(remote[0], 16)?))
+                (ip::Ip::V4(ip::shift_ipv4(u32::from_str_radix(local[0], 16)?)),
+                 ip::Ip::V4(ip::shift_ipv4(u32::from_str_radix(remote[0], 16)?)))
             },
             Mode::Tcp6|Mode::Udp6 => {
-                (ip::shift_ipv4(u32::from_str_radix(local[0], 16)?),
-                 ip::shift_ipv4(u32::from_str_radix(remote[0], 16)?))
+                let ip6_arr: ip::Ip6 = [u32::from_str_radix(&local[0][0..8], 16)?,
+                                        u32::from_str_radix(&local[0][8..16], 16)?,
+                                        u32::from_str_radix(&local[0][16..24], 16)?,
+                                        u32::from_str_radix(&local[0][24..32], 16)?];
+                (ip::Ip::V6(ip::shift_ipv6(ip6_arr)),
+                 ip::Ip::V6(ip::shift_ipv6(ip6_arr)))
             }
         };
         let local_port = u32::from_str_radix(local[1], 16)?;
@@ -84,9 +88,9 @@ fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, NetstatError> {
         let uid = line_vec[7].parse::<i32>()?;
         let conn_state = i32::from_str_radix(line_vec[3], 16)?;
         result.push(Entry {
-            local_address: ip::Ip::V4(local_addr),
+            local_address: local_addr,
             local_port: local_port,
-            remote_address: ip::Ip::V4(remote_addr),
+            remote_address: remote_addr,
             remote_port: remote_port,
             uid: uid,
             connection_state: conn_state,
@@ -130,6 +134,15 @@ mod tests {
         assert_eq!(e2.remote_port, 0);
         assert_eq!(e2.uid, 0);
         assert_eq!(e2.connection_state, 0xA);
+    }
+
+    #[test]
+    fn parse_ipv6_file_test() {
+        let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
+        path.push_str("/test/static/linux_tcp_6");
+        let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
+        assert_eq!(result.len(), 7);
+
     }
 
 }
