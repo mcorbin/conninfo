@@ -1,14 +1,5 @@
 use std::num;
-
-pub type Ip6 = [u32; 4];
-pub type Ip4 = u32;
-
-#[derive(Clone, Debug)]
-pub enum Ip {
-    V4(Ip4),
-    V6(Ip6)
-}
-
+use std::net;
 
 #[derive(Debug)]
 pub enum IpError {
@@ -28,46 +19,51 @@ impl From<num::ParseIntError> for IpError {
 ///
 /// let result = shift_ipv4(Ox010000FF); => OxFF000001
 ///
-pub fn shift_ipv4(ip: Ip4) -> Ip4 {
-    let fmt_ui = (ip << 24 & 0xFF000000) + (ip << 8 & 0x00FF0000) + (ip >> 8 & 0x0000FF00) + (ip >> 24 & 0x000000FF);
-    fmt_ui
+pub fn proc_str_to_ip4(ip_string: &str) -> Result<net::IpAddr, IpError> {
+    let ip = u32::from_str_radix(ip_string, 16)?;
+    let p1 = (ip & 0x000000FF) as u8;
+    let p2 = (ip >> 8 & 0x000000FF) as u8;
+    let p3 = (ip >> 16 & 0x000000FF) as u8;
+    let p4 = (ip >> 24 & 0x000000FF) as u8;
+    Ok(net::IpAddr::V4(net::Ipv4Addr::new(p1, p2, p3, p4)))
 }
 
-/// Format an ipv6 address
-///
-/// # Example
-///
-/// let result = shift_ipv6([0, 0, 0, 0x01000000]); => [0, 0, 0, 1]
-///
-pub fn shift_ipv6(ip: Ip6) -> Ip6 {
-    let mut result: Ip6 = [0, 0, 0, 0];
-    let mut count = 0;
-    for octets in &ip {
-        result[count] = shift_ipv4(*octets);
-        count = count + 1;
-    }
-    result
+pub fn proc_str_to_ip6(ip_string: &str) -> Result<net::IpAddr, IpError> {
+    let p1 = u16::from_str_radix(&ip_string[0..2], 16)?;
+    let p2 = u16::from_str_radix(&ip_string[2..4], 16)?;
+    let p3 = u16::from_str_radix(&ip_string[4..6], 16)?;
+    let p4 = u16::from_str_radix(&ip_string[6..8], 16)?;
+    let p5 = u16::from_str_radix(&ip_string[8..10], 16)?;
+    let p6 = u16::from_str_radix(&ip_string[10..12], 16)?;
+    let p7 = u16::from_str_radix(&ip_string[12..14], 16)?;
+    let p8 = u16::from_str_radix(&ip_string[14..16], 16)?;
+    let p9 = u16::from_str_radix(&ip_string[16..18], 16)?;
+    let p10 = u16::from_str_radix(&ip_string[18..20], 16)?;
+    let p11 = u16::from_str_radix(&ip_string[20..22], 16)?;
+    let p12 = u16::from_str_radix(&ip_string[22..24], 16)?;
+    let p13 = u16::from_str_radix(&ip_string[24..26], 16)?;
+    let p14 = u16::from_str_radix(&ip_string[26..28], 16)?;
+    let p15 = u16::from_str_radix(&ip_string[28..30], 16)?;
+    let p16 = u16::from_str_radix(&ip_string[30..32], 16)?;
+    Ok(net::IpAddr::V6(net::Ipv6Addr::new((p4 << 8) + p3, (p2 << 8) + p1, (p8 << 8) + p7, (p6 << 8) + p5, (p12 << 8) + p11, (p10 << 8) + p9, (p16 << 8) + p15, (p14 << 8) + p13)))
+
 }
-
-
 /// Convert an ipv4 string into u32
 ///
 /// # Example
 ///
 /// let result = ipv4_to_u32("127.0.0.1")? => 0x7F000001
 ///
-pub fn ipv4_to_u32(ip: &str) -> Result<u32, IpError> {
+pub fn str_to_ip4(ip: &str) -> Result<net::Ipv4Addr, IpError> {
     let result = match ip {
-        "localhost" => Ok(0x7F000001),
+        "localhost" => Ok(net::Ipv4Addr::new(127, 0, 0, 1)),
         _ => {
             let ip_vec: Vec<&str> = ip.split('.').collect();
             if ip_vec.len() == 4 {
-                println!("{}", u32::from_str_radix(ip_vec[0], 10)? << 24);
-                let res = (u32::from_str_radix(ip_vec[0], 10)? << 24) +
-                    (u32::from_str_radix(ip_vec[1], 10)? << 16) +
-                    (u32::from_str_radix(ip_vec[2], 10)? << 8) +
-                    u32::from_str_radix(ip_vec[3], 10)?;
-                Ok(res)
+                Ok(net::Ipv4Addr::new(u8::from_str_radix(ip_vec[0], 10)?,
+                                   u8::from_str_radix(ip_vec[1], 10)?,
+                                   u8::from_str_radix(ip_vec[2], 10)?,
+                                   u8::from_str_radix(ip_vec[3], 10)?))
             }
             else {
                 Err(IpError::Format)
@@ -80,28 +76,27 @@ pub fn ipv4_to_u32(ip: &str) -> Result<u32, IpError> {
 #[cfg(test)]
 mod tests {
 
+    use std::net;
+
     #[test]
-    fn shift_ipv4_test() {
-        assert_eq!(0xFF000001, super::shift_ipv4(0x010000FF));
-        assert_eq!(0x12345678, super::shift_ipv4(0x78563412));
-        assert_eq!(0xFA000000, super::shift_ipv4(0x000000FA));
-        assert_eq!(0x000000FA, super::shift_ipv4(0xFA000000));
+    fn proc_str_to_ip4_test() {
+        assert_eq!(net::IpAddr::V4(net::Ipv4Addr::new(127, 0, 0, 1)) , super::proc_str_to_ip4("0100007F").unwrap());
+        assert_eq!(net::IpAddr::V4(net::Ipv4Addr::new(0x12, 0x34, 0x56, 0x78)) , super::proc_str_to_ip4("78563412").unwrap());
+        assert_eq!(net::IpAddr::V4(net::Ipv4Addr::new(0xFA, 0, 0, 0)) , super::proc_str_to_ip4("000000FA").unwrap());
+        assert_eq!(net::IpAddr::V4(net::Ipv4Addr::new(0, 0, 0, 0xFA)) , super::proc_str_to_ip4("FA000000").unwrap());
     }
 
     #[test]
-    fn shift_ipv6_test() {
-        let array: super::Ip6 = [0, 0, 0, 0x01000000];
-        assert_eq!([0, 0, 0, 1], super::shift_ipv6(array));
-        let array: super::Ip6 = [0x98765432, 0, 0x12345678, 0x01000000];
-        assert_eq!([0x32547698, 0, 0x78563412, 1], super::shift_ipv6(array));
+    fn proc_str_to_ip6_test() {
+        assert_eq!(net::IpAddr::V6(net::Ipv6Addr::new(0x3254, 0x7698, 0, 0, 0x7856, 0x3412, 0, 1)) , super::proc_str_to_ip6("98765432000000001234567801000000").unwrap());
     }
 
     #[test]
-    fn ipv4_to_u32_test() {
-        assert_eq!(0x7F000001, super::ipv4_to_u32("localhost").unwrap());
-        assert_eq!(0x7F000001, super::ipv4_to_u32("127.0.0.1").unwrap());
-        assert_eq!(0, super::ipv4_to_u32("0.0.0.0").unwrap());
-        assert_eq!(0xFFFFFFFF, super::ipv4_to_u32("255.255.255.255").unwrap());
+    fn str_to_ip4_test() {
+        assert_eq!(net::Ipv4Addr::new(127, 0, 0, 1), super::str_to_ip4("localhost").unwrap());
+        assert_eq!(net::Ipv4Addr::new(127, 0, 0, 1), super::str_to_ip4("127.0.0.1").unwrap());
+        assert_eq!(net::Ipv4Addr::new(0, 0, 0, 0), super::str_to_ip4("0.0.0.0").unwrap());
+        assert_eq!(net::Ipv4Addr::new(255, 255, 255, 255), super::str_to_ip4("255.255.255.255").unwrap());
     }
 }
 
