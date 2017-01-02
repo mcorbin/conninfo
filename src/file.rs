@@ -25,25 +25,26 @@ pub struct Entry {
 }
 
 #[derive(Debug)]
-pub enum NetstatError {
+pub enum ParseError {
     ParseInt(num::ParseIntError),
     Io(io::Error)
 }
 
-impl From<num::ParseIntError> for NetstatError {
-    fn from(err: num::ParseIntError) -> NetstatError {
-        NetstatError::ParseInt(err)
+impl From<num::ParseIntError> for ParseError {
+    fn from(err: num::ParseIntError) -> ParseError {
+        ParseError::ParseInt(err)
     }
 }
-impl From<io::Error> for NetstatError {
-    fn from(err: io::Error) -> NetstatError {
-        NetstatError::Io(err)
+
+impl From<io::Error> for ParseError {
+    fn from(err: io::Error) -> ParseError {
+        ParseError::Io(err)
     }
 }
 
 
-fn get_path_from_mode(mode: Mode) -> String {
-    let path = match mode {
+pub fn get_path_from_mode(mode: &Mode) -> String {
+    let path = match *mode {
         Mode::Tcp => "/proc/net/tcp",
         Mode::Tcp6 => "/proc/net/tcp6",
         Mode::Udp => "/proc/net/udp",
@@ -52,13 +53,14 @@ fn get_path_from_mode(mode: Mode) -> String {
     path.to_owned()
 }
 
-/// Parse the /proc/net/tcp or /proc/net/udp file. Returns a Vec of Entry
+
+/// Parse the /proc/net/tcp or /proc/net/udp files (or ipv6 equivalents). Returns a Vec of Entry
 ///
 /// # Example
 ///
-/// let result = parse_linux_file("/proc/net/tcp");
+/// let result = parse_proc_file("/proc/net/tcp");
 ///
-fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, NetstatError> {
+pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError> {
     let file = try!(fs::File::open(path));
     let reader = io::BufReader::new(file);
     let mut result: Vec<Entry> = Vec::new();
@@ -200,4 +202,3 @@ mod tests {
     }
 
 }
-
