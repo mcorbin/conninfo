@@ -14,6 +14,7 @@ pub enum Mode {
     Udp6
 }
 
+/// This struct represents an entry (a line) un /proc/net/tcp or udp (or their ipv6 variants.
 #[derive(Clone, Debug)]
 pub struct Entry {
     pub local_address: net::IpAddr,
@@ -152,27 +153,30 @@ mod tests {
 
     #[test]
     fn parse_ipv6_file_test() {
-        // let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
-        // path.push_str("/test/static/linux_tcp_6");
-        // let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
-        // assert_eq!(result.len(), 7);
+        let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
+        path.push_str("/test/static/linux_tcp_6");
+        let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
+        assert_eq!(result.len(), 7);
 
-        // let e0 = &result[0];
-        // assert_eq!(if let ip::Ip::V6(val) = e0.local_address { val } else { panic!() },[0, 0, 0, 0]);
-        // assert_eq!(e0.local_port, 0x22B8);
-        // assert_eq!(if let ip::Ip::V6(val) = e0.remote_address { val } else { panic!() }, [0, 0, 0, 0]);
-        // assert_eq!(e0.remote_port, 0);
-        // assert_eq!(e0.uid, 999);
-        // assert_eq!(e0.connection_state, 0xA);
+        let e0 = &result[0];
+        assert_eq!(e0.local_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)));
+        assert_eq!(e0.local_port, 0x22B8);
+        assert_eq!(e0.remote_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)));
+        assert_eq!(e0.remote_port, 0);
+        assert_eq!(e0.uid, 999);
+        assert_eq!(e0.connection_state, 0xA);
 
-        // let e6 = &result[6];
-        // assert_eq!(if let ip::Ip::V6(val) = e6.local_address { val } else { panic!() },[0x2a01cb15, 0x80543e00, 0x5ee0c5ff, 0xfe50c693]);
-        // assert_eq!(e6.local_port, 0xAB3E);
-        // assert_eq!(if let ip::Ip::V6(val) = e6.remote_address { val } else { panic!() }, [0x2a001450, 0x400C0C01, 0, 0x5E]);
-        // assert_eq!(e6.remote_port, 0x01BB);
-        // assert_eq!(e6.uid, 1000);
-        // assert_eq!(e6.connection_state, 1);
-
+        let e6 = &result[6];
+        assert_eq!(e6.local_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0x2a01, 0xcb15, 0x8054, 0x3e00, 0x5ee0, 0xc5ff, 0xfe50, 0xc693)));
+        assert_eq!(e6.local_port, 0xAB3E);
+        assert_eq!(e6.remote_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0x2a00, 0x1450, 0x400C, 0x0C01, 0, 0, 0, 0x5E)));
+        assert_eq!(e6.remote_port, 0x01BB);
+        assert_eq!(e6.uid, 1000);
+        assert_eq!(e6.connection_state, 1);
     }
 
 

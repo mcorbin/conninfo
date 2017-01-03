@@ -2,7 +2,6 @@ use file;
 
 pub fn get_conn(mode: file::Mode) -> Result<Vec<file::Entry>, file::ParseError> {
     file::parse_proc_file(&file::get_path_from_mode(&mode), mode)
-
 }
 
 pub fn get_tcp6() -> Result<Vec<file::Entry>, file::ParseError> {
