@@ -67,7 +67,7 @@ pub fn get_path_from_mode(mode: &Mode) -> String {
 ///
 /// # Example
 ///
-/// let result = parse_proc_file("/proc/net/tcp");
+/// let result = parse_proc_file("/proc/net/tcp", Mode::Tcp);
 ///
 pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError> {
     let file = try!(fs::File::open(path));

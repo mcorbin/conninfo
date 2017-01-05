@@ -13,11 +13,11 @@ impl From<num::ParseIntError> for IpError {
     }
 }
 
-/// Format an ipv4 address
+/// Format an ipv4 address string from /proc/net and returns a Ipv4Addr
 ///
 /// # Example
 ///
-/// let result = shift_ipv4(Ox010000FF); => OxFF000001
+/// let result = proc_str_to_ip4(Ox010000FF); => IpAddr for OxFF000001
 ///
 pub fn proc_str_to_ip4(ip_string: &str) -> Result<net::IpAddr, IpError> {
     let ip = u32::from_str_radix(ip_string, 16)?;
@@ -48,11 +48,11 @@ pub fn proc_str_to_ip6(ip_string: &str) -> Result<net::IpAddr, IpError> {
     Ok(net::IpAddr::V6(net::Ipv6Addr::new((p4 << 8) + p3, (p2 << 8) + p1, (p8 << 8) + p7, (p6 << 8) + p5, (p12 << 8) + p11, (p10 << 8) + p9, (p16 << 8) + p15, (p14 << 8) + p13)))
 
 }
-/// Convert an ipv4 string into u32
+/// Convert an ipv4 string into an Ipv4Addr
 ///
 /// # Example
 ///
-/// let result = ipv4_to_u32("127.0.0.1")? => 0x7F000001
+/// let result = str_to_ipv4("127.0.0.1")? => Ipv4Addr 0x7F000001
 ///
 pub fn str_to_ip4(ip: &str) -> Result<net::Ipv4Addr, IpError> {
     let result = match ip {
