@@ -115,7 +115,7 @@ mod tests {
     use std::net;
 
     #[test]
-    fn parse_ipv4_file_test() {
+    fn parse_tcp_4_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_tcp_4");
         let result = super::parse_proc_file(&path, super::Mode::Tcp).unwrap();
@@ -152,7 +152,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_ipv6_file_test() {
+    fn parse_tcp_6_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_tcp_6");
         let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
@@ -215,6 +215,36 @@ mod tests {
         assert_eq!(e2.remote_port, 0);
         assert_eq!(e2.uid, 0);
         assert_eq!(e2.connection_state, 7);
+    }
+
+
+    #[test]
+    fn parse_udp6_file_test() {
+        let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
+        path.push_str("/test/static/linux_udp_6");
+
+        let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
+        assert_eq!(result.len(), 3);
+        let e0 = &result[0];
+        assert_eq!(e0.local_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0xfe80, 0, 0, 0, 0x5ee0, 0xc5ff, 0xfe50, 0xc693)));
+        assert_eq!(e0.local_port, 0x1A73);
+        assert_eq!(e0.remote_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)));
+        assert_eq!(e0.remote_port, 0);
+        assert_eq!(e0.uid, 1000);
+        assert_eq!(e0.connection_state, 0x7);
+
+        let e2 = &result[2];
+        assert_eq!(e2.local_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)));
+        assert_eq!(e2.local_port, 0x1A73);
+        assert_eq!(e2.remote_address,
+                   net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)));
+        assert_eq!(e2.remote_port, 0);
+        assert_eq!(e2.uid, 1000);
+        assert_eq!(e2.connection_state, 0x7);
+
     }
 
 }
