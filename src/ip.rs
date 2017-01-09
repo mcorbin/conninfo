@@ -17,7 +17,7 @@ impl From<num::ParseIntError> for IpError {
 ///
 /// # Example
 ///
-/// let result = proc_str_to_ip4(Ox010000FF); => IpAddr for OxFF000001
+/// let result = proc_str_to_ip4("010000FF"); => IpAddr for OxFF000001
 ///
 pub fn proc_str_to_ip4(ip_string: &str) -> Result<net::IpAddr, IpError> {
     let ip = u32::from_str_radix(ip_string, 16)?;
@@ -28,6 +28,12 @@ pub fn proc_str_to_ip4(ip_string: &str) -> Result<net::IpAddr, IpError> {
     Ok(net::IpAddr::V4(net::Ipv4Addr::new(p1, p2, p3, p4)))
 }
 
+/// Format an ipv6 address string from /proc/net and returns a Ipv6Addr
+///
+/// # Example
+///
+/// let result = proc_str_to_ip4("15CB012A003E5480FFC5E05E93C650FE"); => IpAddr for Ox2A001450400C0C010000000000000053
+///
 pub fn proc_str_to_ip6(ip_string: &str) -> Result<net::IpAddr, IpError> {
     let p1 = u16::from_str_radix(&ip_string[0..2], 16)?;
     let p2 = u16::from_str_radix(&ip_string[2..4], 16)?;
@@ -46,8 +52,8 @@ pub fn proc_str_to_ip6(ip_string: &str) -> Result<net::IpAddr, IpError> {
     let p15 = u16::from_str_radix(&ip_string[28..30], 16)?;
     let p16 = u16::from_str_radix(&ip_string[30..32], 16)?;
     Ok(net::IpAddr::V6(net::Ipv6Addr::new((p4 << 8) + p3, (p2 << 8) + p1, (p8 << 8) + p7, (p6 << 8) + p5, (p12 << 8) + p11, (p10 << 8) + p9, (p16 << 8) + p15, (p14 << 8) + p13)))
-
 }
+
 /// Convert an ipv4 string into an Ipv4Addr
 ///
 /// # Example
