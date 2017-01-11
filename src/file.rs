@@ -6,7 +6,7 @@ use ip;
 use std::net;
 use util;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Mode {
     Tcp,
     Udp,
