@@ -67,9 +67,39 @@ pub fn str_to_ip4(ip: &str) -> Result<net::Ipv4Addr, IpError> {
             let ip_vec: Vec<&str> = ip.split('.').collect();
             if ip_vec.len() == 4 {
                 Ok(net::Ipv4Addr::new(u8::from_str_radix(ip_vec[0], 10)?,
-                                   u8::from_str_radix(ip_vec[1], 10)?,
-                                   u8::from_str_radix(ip_vec[2], 10)?,
-                                   u8::from_str_radix(ip_vec[3], 10)?))
+                                      u8::from_str_radix(ip_vec[1], 10)?,
+                                      u8::from_str_radix(ip_vec[2], 10)?,
+                                      u8::from_str_radix(ip_vec[3], 10)?))
+            }
+            else {
+                Err(IpError::Format)
+            }
+        }
+    };
+    result
+}
+
+/// Convert an ipv6 string into an Ipv6Addr
+///
+/// # Example
+///
+/// let result = str_to_ipv6("2a01:cb14:63a:7400:5ee0:c5ff:fe50:c693")? => Ipv6Addr 2a01:cb14:63a:7400:5ee0:c5ff:fe50:c693
+///
+pub fn str_to_ip6(ip: &str) -> Result<net::Ipv6Addr, IpError> {
+    let result = match ip {
+        "::1" => Ok(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
+        "localhost" => Ok(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
+        _ => {
+            let ip_vec: Vec<&str> = ip.split(':').collect();
+            if ip_vec.len() == 8 {
+                Ok(net::Ipv6Addr::new(u16::from_str_radix(ip_vec[0], 16)?,
+                                      u16::from_str_radix(ip_vec[1], 16)?,
+                                      u16::from_str_radix(ip_vec[2], 16)?,
+                                      u16::from_str_radix(ip_vec[3], 16)?,
+                                      u16::from_str_radix(ip_vec[4], 16)?,
+                                      u16::from_str_radix(ip_vec[5], 16)?,
+                                      u16::from_str_radix(ip_vec[6], 16)?,
+                                      u16::from_str_radix(ip_vec[7], 16)?))
             }
             else {
                 Err(IpError::Format)
@@ -103,6 +133,13 @@ mod tests {
         assert_eq!(net::Ipv4Addr::new(127, 0, 0, 1), super::str_to_ip4("127.0.0.1").unwrap());
         assert_eq!(net::Ipv4Addr::new(0, 0, 0, 0), super::str_to_ip4("0.0.0.0").unwrap());
         assert_eq!(net::Ipv4Addr::new(255, 255, 255, 255), super::str_to_ip4("255.255.255.255").unwrap());
+    }
+
+    #[test]
+    fn str_to_ip6_test() {
+        assert_eq!(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), super::str_to_ip6("localhost").unwrap());
+        assert_eq!(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1), super::str_to_ip6("::1").unwrap());
+        assert_eq!(net::Ipv6Addr::new(0x2a01, 0xcb14, 0x63a, 0x7400, 0x5ee0, 0xc5ff, 0xfe50, 0xc693), super::str_to_ip6("2a01:cb14:63a:7400:5ee0:c5ff:fe50:c693").unwrap());
     }
 }
 
