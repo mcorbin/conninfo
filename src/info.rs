@@ -1,32 +1,52 @@
 use file;
 use std::net;
 
-pub fn get_conn(mode: file::Mode) -> Result<Vec<file::Entry>, file::ParseError> {
+#[derive(Clone, Debug, PartialEq)]
+pub enum Mode {
+    Tcp,
+    Udp,
+    Tcp6,
+    Udp6
+}
+
+/// This struct represents an entry (a line) in /proc/net/tcp or udp (or their ipv6 variants.
+#[derive(Clone, Debug)]
+pub struct Entry {
+    pub local_address: net::IpAddr,
+    pub local_port: u32,
+    pub remote_address: net::IpAddr,
+    pub remote_port: u32,
+    pub connection_state: i32,
+    pub uid: i32,
+    pub mode: Mode,
+}
+
+pub fn get_conn(mode: Mode) -> Result<Vec<Entry>, file::ParseError> {
     file::parse_proc_file(&file::get_path_from_mode(&mode), mode)
 }
 
-pub fn get_tcp6() -> Result<Vec<file::Entry>, file::ParseError> {
-    get_conn(file::Mode::Tcp6)
+pub fn get_tcp6() -> Result<Vec<Entry>, file::ParseError> {
+    get_conn(Mode::Tcp6)
 }
 
-pub fn get_tcp() -> Result<Vec<file::Entry>, file::ParseError> {
-    get_conn(file::Mode::Tcp)
+pub fn get_tcp() -> Result<Vec<Entry>, file::ParseError> {
+    get_conn(Mode::Tcp)
 }
 
-pub fn get_udp() -> Result<Vec<file::Entry>, file::ParseError> {
-    get_conn(file::Mode::Udp)
+pub fn get_udp() -> Result<Vec<Entry>, file::ParseError> {
+    get_conn(Mode::Udp)
 }
 
-pub fn get_udp6() -> Result<Vec<file::Entry>, file::ParseError> {
-    get_conn(file::Mode::Udp6)
+pub fn get_udp6() -> Result<Vec<Entry>, file::ParseError> {
+    get_conn(Mode::Udp6)
 }
 
-pub fn filter_by(entries: &Vec<file::Entry>,
-                 mode: &file::Mode,
+pub fn filter_by(entries: &Vec<Entry>,
+                 mode: &Mode,
                  local_address: Option<net::IpAddr>,
                  remote_address: Option<net::IpAddr>,
                  local_port: Option<u32>,
-                 remote_port: Option<u32>) -> Vec<file::Entry> {
+                 remote_port: Option<u32>) -> Vec<Entry> {
     entries.iter()
         .cloned()
         .filter(|e| {
@@ -61,46 +81,45 @@ pub fn filter_by(entries: &Vec<file::Entry>,
                 true
             }
         })
-        .collect::<Vec<file::Entry>>()
+        .collect::<Vec<Entry>>()
 }
 
 #[cfg(test)]
 mod tests {
 
     use std::net;
-    use file;
 
     #[test]
     fn filter_by_test() {
         let entries = vec![
-            file::Entry {
+            super::Entry {
                 local_address: net::IpAddr::V4(net::Ipv4Addr::new(127, 0, 0, 1)),
                 remote_address: net::IpAddr::V4(net::Ipv4Addr::new(0, 0, 0, 0)),
                 local_port: 80,
-                mode: file::Mode::Tcp,
+                mode: super::Mode::Tcp,
                 remote_port: 90,
                 connection_state: 0xA,
                 uid: 1000},
-            file::Entry {
+            super::Entry {
                 local_address: net::IpAddr::V4(net::Ipv4Addr::new(127, 0, 0, 2)),
                 remote_address: net::IpAddr::V4(net::Ipv4Addr::new(0, 0, 0, 3)),
                 local_port: 81,
-                mode: file::Mode::Tcp,
+                mode: super::Mode::Tcp,
                 remote_port: 90,
                 connection_state: 0xA,
                 uid: 1000},
-            file::Entry {
+            super::Entry {
                 local_address: net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 1)),
                 remote_address: net::IpAddr::V6(net::Ipv6Addr::new(0, 0, 0, 0, 0, 0, 0, 0)),
                 local_port: 80,
-                mode: file::Mode::Tcp6,
+                mode: super::Mode::Tcp6,
                 remote_port: 90,
                 connection_state: 0xA,
                 uid: 1000}];
-        let result = super::filter_by(&entries, &file::Mode::Tcp, None, None, None, None);
+        let result = super::filter_by(&entries, &super::Mode::Tcp, None, None, None, None);
         assert_eq!(result.len(), 2);
 
-        let result = super::filter_by(&entries, &file::Mode::Tcp, Some(net::IpAddr::V4(net::Ipv4Addr::new(127, 0, 0, 1))), None, None, None);
+        let result = super::filter_by(&entries, &super::Mode::Tcp, Some(net::IpAddr::V4(net::Ipv4Addr::new(127, 0, 0, 1))), None, None, None);
         assert_eq!(result.len(), 1);
     }
 

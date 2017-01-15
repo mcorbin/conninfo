@@ -3,28 +3,8 @@ use std::io::prelude::*;
 use std::io;
 use std::num;
 use ip;
-use std::net;
 use util;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Mode {
-    Tcp,
-    Udp,
-    Tcp6,
-    Udp6
-}
-
-/// This struct represents an entry (a line) un /proc/net/tcp or udp (or their ipv6 variants.
-#[derive(Clone, Debug)]
-pub struct Entry {
-    pub local_address: net::IpAddr,
-    pub local_port: u32,
-    pub remote_address: net::IpAddr,
-    pub remote_port: u32,
-    pub connection_state: i32,
-    pub uid: i32,
-    pub mode: Mode,
-}
+use info;
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -51,17 +31,15 @@ impl From<io::Error> for ParseError {
     }
 }
 
-
-pub fn get_path_from_mode(mode: &Mode) -> String {
+pub fn get_path_from_mode(mode: &info::Mode) -> String {
     let path = match *mode {
-        Mode::Tcp => "/proc/net/tcp",
-        Mode::Tcp6 => "/proc/net/tcp6",
-        Mode::Udp => "/proc/net/udp",
-        Mode::Udp6 => "/proc/net/udp6",
+        info::Mode::Tcp => "/proc/net/tcp",
+        info::Mode::Tcp6 => "/proc/net/tcp6",
+        info::Mode::Udp => "/proc/net/udp",
+        info::Mode::Udp6 => "/proc/net/udp6",
     };
     path.to_owned()
 }
-
 
 /// Parse the /proc/net/tcp or /proc/net/udp files (or ipv6 equivalents). Returns a Vec of Entry
 ///
@@ -69,10 +47,10 @@ pub fn get_path_from_mode(mode: &Mode) -> String {
 ///
 /// let result = parse_proc_file("/proc/net/tcp", Mode::Tcp);
 ///
-pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError> {
+pub fn parse_proc_file(path: &str, mode: info::Mode) -> Result<Vec<info::Entry>, ParseError> {
     let file = try!(fs::File::open(path));
     let reader = io::BufReader::new(file);
-    let mut result: Vec<Entry> = Vec::new();
+    let mut result: Vec<info::Entry> = Vec::new();
     let mut lines = reader.lines();
     lines.next();
     for l in lines {
@@ -81,11 +59,11 @@ pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError>
         let local: Vec<&str> = line_vec[1].split(':').collect();
         let remote: Vec<&str> = line_vec[2].split(':').collect();
         let (local_addr, remote_addr) = match mode {
-            Mode::Tcp|Mode::Udp => {
+            info::Mode::Tcp|info::Mode::Udp => {
                 (ip::proc_str_to_ip4(local[0])?,
                  ip::proc_str_to_ip4(remote[0])?)
             },
-            Mode::Tcp6|Mode::Udp6 => {
+            info::Mode::Tcp6|info::Mode::Udp6 => {
                 (ip::proc_str_to_ip6(local[0])?,
                  ip::proc_str_to_ip6(remote[0])?)
 
@@ -95,7 +73,7 @@ pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError>
         let remote_port = u32::from_str_radix(remote[1], 16)?;
         let uid = line_vec[7].parse::<i32>()?;
         let conn_state = i32::from_str_radix(line_vec[3], 16)?;
-        result.push(Entry {
+        result.push(info::Entry {
             local_address: local_addr,
             local_port: local_port,
             remote_address: remote_addr,
@@ -111,14 +89,14 @@ pub fn parse_proc_file(path: &str, mode: Mode) -> Result<Vec<Entry>, ParseError>
 #[cfg(test)]
 mod tests {
     use std::env;
-    use ip;
     use std::net;
+    use info;
 
     #[test]
     fn parse_tcp_4_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_tcp_4");
-        let result = super::parse_proc_file(&path, super::Mode::Tcp).unwrap();
+        let result = super::parse_proc_file(&path, info::Mode::Tcp).unwrap();
         assert_eq!(result.len(), 3);
         let e0 = &result[0];
         assert_eq!(e0.local_address,
@@ -155,7 +133,7 @@ mod tests {
     fn parse_tcp_6_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_tcp_6");
-        let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
+        let result = super::parse_proc_file(&path, info::Mode::Tcp6).unwrap();
         assert_eq!(result.len(), 7);
 
         let e0 = &result[0];
@@ -184,7 +162,7 @@ mod tests {
     fn parse_udp_4_file_test() {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_udp_4");
-        let result = super::parse_proc_file(&path, super::Mode::Tcp).unwrap();
+        let result = super::parse_proc_file(&path, info::Mode::Tcp).unwrap();
         assert_eq!(result.len(), 3);
         let e0 = &result[0];
         assert_eq!(e0.local_address,
@@ -223,7 +201,7 @@ mod tests {
         let mut path = env::current_dir().unwrap().to_str().unwrap_or("").to_string();
         path.push_str("/test/static/linux_udp_6");
 
-        let result = super::parse_proc_file(&path, super::Mode::Tcp6).unwrap();
+        let result = super::parse_proc_file(&path, info::Mode::Tcp6).unwrap();
         assert_eq!(result.len(), 3);
         let e0 = &result[0];
         assert_eq!(e0.local_address,

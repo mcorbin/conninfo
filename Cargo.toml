@@ -3,4 +3,7 @@ name = "conninfo"
 version = "0.1.0"
 authors = ["mcorbin <corbin.math@gmail.com>"]
 
+[lib]
+name = "conninfo"
+
 [dependencies]
