@@ -84,6 +84,21 @@ pub fn filter_by(entries: &Vec<Entry>,
         .collect::<Vec<Entry>>()
 }
 
+#[derive(Debug)]
+pub enum ModeError {
+    UnknowMode
+}
+
+pub fn get_mode(mode: &str) -> Result<Mode, ModeError> {
+    match mode {
+        "tcp" => Ok(Mode::Tcp),
+        "udp" => Ok(Mode::Udp),
+        "tcp6" => Ok(Mode::Tcp6),
+        "udp6" => Ok(Mode::Udp6),
+        _ => Err(ModeError::UnknowMode)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
